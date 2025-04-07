@@ -26,7 +26,7 @@ lemlib::Drivetrain::Drivetrain(pros::MotorGroup* leftMotors, pros::MotorGroup* r
       rpm(rpm),
       horizontalDrift(horizontalDrift) {}
 
-lemlib::Chassis::Chassis(Drivetrain drivetrain, ControllerSettings linearSettings, ControllerSettings angularSettings,
+lemlib::Chassis::Chassis(Drivetrain drivetrain, ControllerSettings linearSettings, ControllerSettings angularSettings, ControllerSettings headingSettings
                          OdomSensors sensors, DriveCurve* throttleCurve, DriveCurve* steerCurve)
     : drivetrain(drivetrain),
       lateralSettings(linearSettings),
@@ -36,6 +36,7 @@ lemlib::Chassis::Chassis(Drivetrain drivetrain, ControllerSettings linearSetting
       steerCurve(steerCurve),
       lateralPID(linearSettings.kP, linearSettings.kI, linearSettings.kD, linearSettings.windupRange, true),
       angularPID(angularSettings.kP, angularSettings.kI, angularSettings.kD, angularSettings.windupRange, true),
+      headingPID(headingSettings.kP, headingSettings.kI, headingSettings.kD, headingSettings.windupRange, true)
       lateralLargeExit(lateralSettings.largeError, lateralSettings.largeErrorTimeout),
       lateralSmallExit(lateralSettings.smallError, lateralSettings.smallErrorTimeout),
       angularLargeExit(angularSettings.largeError, angularSettings.largeErrorTimeout),
