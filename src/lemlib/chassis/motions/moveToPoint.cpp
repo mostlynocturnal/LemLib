@@ -22,7 +22,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
     lateralPID.reset();
     lateralLargeExit.reset();
     lateralSmallExit.reset();
-    angularPID.reset();
+    headingPID.reset();
 
     // initialize vars used between iterations
     Pose lastPose = getPose();
@@ -30,7 +30,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
     Timer timer(timeout);
     bool close = false;
     float prevLateralOut = 0; // previous lateral power
-    float prevAngularOut = 0; // previous angular power
+    float prevHeadingOut = 0; // previous heading correction power
     const int compState = pros::competition::get_status();
     std::optional<bool> prevSide = std::nullopt;
 
@@ -68,7 +68,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
 
         // calculate error
         const float adjustedRobotTheta = params.forwards ? pose.theta : pose.theta + M_PI;
-        const float angularError = angleError(adjustedRobotTheta, pose.angle(target));
+        const float headingError = angleError(adjustedRobotTheta, pose.angle(target));
         float lateralError = pose.distance(target) * cos(angleError(pose.theta, pose.angle(target)));
 
         // update exit conditions
@@ -77,12 +77,12 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
 
         // get output from PIDs
         float lateralOut = lateralPID.update(lateralError);
-        float angularOut = angularPID.update(radToDeg(angularError));
-        if (close) angularOut = 0;
+        float headingOut = headingPID.update(radToDeg(headingError));
+        if (close) headingOut = 0;
 
-        // apply restrictions on angular speed
-        angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
-        angularOut = slew(angularOut, prevAngularOut, angularSettings.slew);
+        // apply restrictions on heading speed
+        headingOut = std::clamp(headingOut, -params.maxSpeed, params.maxSpeed);
+        headingOut = slew(headingOut, prevheadingOut, headingSettings.slew);
 
         // apply restrictions on lateral speed
         lateralOut = std::clamp(lateralOut, -params.maxSpeed, params.maxSpeed);
@@ -100,14 +100,14 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
             lateralOut = -fabs(params.minSpeed);
 
         // update previous output
-        prevAngularOut = angularOut;
+        prevheadingOut = headingOut;
         prevLateralOut = lateralOut;
 
-        infoSink()->debug("Angular Out: {}, Lateral Out: {}", angularOut, lateralOut);
+        infoSink()->debug("heading Out: {}, Lateral Out: {}", headingOut, lateralOut);
 
         // ratio the speeds to respect the max speed
-        float leftPower = lateralOut + angularOut;
-        float rightPower = lateralOut - angularOut;
+        float leftPower = lateralOut + headingOut;
+        float rightPower = lateralOut - headingOut;
         const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
         if (ratio > 1) {
             leftPower /= ratio;
